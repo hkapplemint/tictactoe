@@ -79,6 +79,17 @@ class MainActivity : AppCompatActivity() {
                         playerTurnIsCircle = true
                     }
                 }
+                if(!gameEnded){
+//                    val botMove = getBestMove()
+//                    renderBoard()
+//                    val tv:TextView = findViewById(R.id.tv)
+//                    tv.text = botMove.toString() + gameEnded.toString()
+//                    boardArray[botMove.first][botMove.second] = "Cross"
+//                    checkWin()
+//                    checkDraw()
+//                    playerTurnIsCircle = true
+                }
+
             }
         }
     }
@@ -98,7 +109,7 @@ class MainActivity : AppCompatActivity() {
     )
 
 
-    fun checkWin() {
+    fun checkWin():String {
         val tv: TextView = findViewById(R.id.tv)
         //Check horizontal
         for (i in 0..2) {
@@ -106,11 +117,11 @@ class MainActivity : AppCompatActivity() {
                 if ("Circle" in boardArray[i]) {
                     tv.text = "Circle Wins"
                     gameEnded = true
-                    break
+                    return "Circle Wins"
                 } else if ("Cross" in boardArray[i]) {
                     tv.text = "Cross Wins"
                     gameEnded = true
-                    break
+                    return "Cross Wins"
                 }
             }
         }
@@ -134,11 +145,11 @@ class MainActivity : AppCompatActivity() {
                 if("Circle" in column){
                     tv.text = "Circle Wins"
                     gameEnded = true
-                    break
+                    return "Circle Wins"
                 } else if ("Cross" in column){
                     tv.text = "Cross Wins"
                     gameEnded = true
-                    break
+                    return "Cross Wins"
                 }
             }
         }
@@ -166,17 +177,57 @@ class MainActivity : AppCompatActivity() {
                 if("Circle" in diagonal){
                     tv.text = "Circle Wins"
                     gameEnded = true
-                    break
+                    return "Circle Wins"
                 } else if ("Cross" in diagonal){
                     tv.text = "Cross Wins"
                     gameEnded = true
-                    break
+                    return "Cross Wins"
+                }
+            }
+        }
+        return ""
+    }
+
+    fun renderBoard(){
+        val iv00:ImageView = findViewById(R.id.iv00)
+        iv00.tag = "00"
+        val iv01:ImageView = findViewById(R.id.iv01)
+        iv01.tag = "01"
+        val iv02:ImageView = findViewById(R.id.iv02)
+        iv02.tag = "02"
+        val iv10:ImageView = findViewById(R.id.iv10)
+        iv10.tag = "10"
+        val iv11:ImageView = findViewById(R.id.iv11)
+        iv11.tag = "11"
+        val iv12:ImageView = findViewById(R.id.iv12)
+        iv12.tag = "12"
+        val iv20:ImageView = findViewById(R.id.iv20)
+        iv20.tag = "20"
+        val iv21:ImageView = findViewById(R.id.iv21)
+        iv21.tag = "21"
+        val iv22:ImageView = findViewById(R.id.iv22)
+        iv22.tag = "22"
+        val ivList = listOf<ImageView>(iv00, iv01, iv02, iv10, iv11, iv12, iv20, iv21, iv22)
+
+        for(iv in ivList){
+            val firstChar = iv.tag.toString().substring(0,1)
+            val secondChar = iv.tag.toString().substring(1)
+
+            for(i in 0..2){
+                for(j in 0..2){
+                    if(i == firstChar.toInt() && j == secondChar.toInt()){
+                        when(boardArray[i][j]){
+                            "Cross" -> iv.setImageResource(R.drawable.cross)
+                            "Circle" -> iv.setImageResource(R.drawable.circle)
+                            "Empty" -> iv.setImageResource(R.drawable.empty)
+                        }
+                    }
                 }
             }
         }
     }
 
-    fun checkDraw(){
+    fun checkDraw():Boolean{
         val tv: TextView = findViewById(R.id.tv)
         var emptyFound = 0
         for (row in boardArray){
@@ -187,6 +238,66 @@ class MainActivity : AppCompatActivity() {
         if(emptyFound==0){
             tv.text = "Draw"
             gameEnded = true
+            return true
         }
+        return false
+    }
+
+    fun getAvailalbeMoves(): List<Pair<Int, Int>>{
+        val availableMoves = mutableListOf<Pair<Int, Int>>()
+        for(i in 0..2){
+            for (j in 0..2){
+                if(boardArray[i][j]=="Empty"){
+                    availableMoves.add(Pair(i,j))
+                }
+            }
+        }
+        return availableMoves
+    }
+
+    fun minimax(depth:Int, maximizingPlayer:Boolean):Int{
+        val winner = checkWin()
+        if(winner!=""){
+            return if (winner == "Cross Wins") 10-depth else depth-10
+        }
+        if(checkDraw()){
+            return 0
+        }
+        if(maximizingPlayer){
+            var maxEval = Int.MIN_VALUE
+            for ( move in getAvailalbeMoves()){
+                boardArray[move.first][move.second] = "Cross"
+                playerTurnIsCircle = true
+                val eval = minimax(depth + 1, false)
+                maxEval = maxOf(maxEval, eval)
+                boardArray[move.first][move.second] = "Empty"
+            }
+            return maxEval
+        } else {
+            var minEval = Int.MAX_VALUE
+            for (move in getAvailalbeMoves()){
+                boardArray[move.first][move.second] = "Circle"
+                playerTurnIsCircle = false
+                val eval = minimax(depth + 1, true)
+                minEval = minOf(minEval, eval)
+                boardArray[move.first][move.second] = "Empty"
+            }
+            return minEval
+        }
+    }
+
+    fun getBestMove(): Pair<Int, Int>{
+        var bestMove = Pair(-1, -1)
+        var bestEval = Int.MIN_VALUE
+        for(move in getAvailalbeMoves()){
+            boardArray[move.first][move.second] = "Cross"
+            val eval = minimax(0, false)
+            if(eval > bestEval){
+                bestEval = eval
+                bestMove = move
+            }
+            boardArray[move.first][move.second] = "Empty"
+        }
+        return bestMove
     }
 }
